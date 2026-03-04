@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEOINT — Global Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b0f;
+    --panel: #0c1219;
+    --panel2: #101820;
+    --border: #1a2840;
+    --border2: #243550;
+    --accent: #00d4ff;
+    --accent2: #0088cc;
+    --red: #ff3b3b;
+    --orange: #ff8c00;
+    --yellow: #ffd700;
+    --green: #00ff88;
+    --purple: #9b59b6;
+    --text: #c8d8e8;
+    --text2: #6a8aa8;
+    --text3: #3a5570;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow Condensed', sans-serif;
+    --body: 'Barlow', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 48px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .logo-icon::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 50%;
+    animation: pulse-ring 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+  @keyframes pulse-ring { 0%{transform:scale(1);opacity:0.3} 100%{transform:scale(1.6);opacity:0} }
+
+  .logo-text {
+    font-family: var(--sans);
+    font-weight: 900;
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 2px;
+    margin-top: -2px;
+  }
+
+  .header-center {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tab {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { color: var(--text); border-color: var(--border2); }
+  .tab.active { background: rgba(0,212,255,0.1); color: var(--accent); border-color: var(--accent2); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 1px;
+  }
+
+  .threat-level {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border: 1px solid var(--orange);
+    background: rgba(255,140,0,0.08);
+  }
+
+  .threat-label { font-family: var(--mono); font-size: 9px; color: var(--text2); letter-spacing: 1px; }
+  .threat-value { font-family: var(--sans); font-weight: 700; font-size: 14px; color: var(--orange); letter-spacing: 2px; }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    grid-template-rows: 1fr 200px;
+    gap: 1px;
+    background: var(--border);
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .panel {
+    background: var(--panel);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .panel-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  /* LEFT PANEL - TENSION INDEX */
+  .tension-list {
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .tension-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tension-item:hover {
+    border-color: var(--border2);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .tension-item.selected {
+    border-color: var(--accent2);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .tension-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+  }
+
+  .tension-item.critical::before { background: var(--red); }
+  .tension-item.high::before { background: var(--orange); }
+  .tension-item.elevated::before { background: var(--yellow); }
+  .tension-item.moderate::before { background: var(--green); }
+
+  .flag {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .tension-info { flex: 1; min-width: 0; }
+
+  .tension-name {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tension-desc {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tension-score-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .tension-score {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .tension-item.critical .tension-score { color: var(--red); }
+  .tension-item.high .tension-score { color: var(--orange); }
+  .tension-item.elevated .tension-score { color: var(--yellow); }
+  .tension-item.moderate .tension-score { color: var(--green); }
+
+  .tension-bar-wrap {
+    width: 40px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .tension-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .tension-item.critical .tension-bar { background: var(--red); }
+  .tension-item.high .tension-bar { background: var(--orange); }
+  .tension-item.elevated .tension-bar { background: var(--yellow); }
+  .tension-item.moderate .tension-bar { background: var(--green); }
+
+  .tension-delta {
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .delta-up { color: var(--red); }
+  .delta-down { color: var(--green); }
+
+  /* MAP AREA */
+  .map-panel {
+    grid-row: span 1;
+    position: relative;
+  }
+
+  .map-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #070d14;
+  }
+
+  svg#world-map {
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-controls {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .map-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(10,20,35,0.9);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: var(--mono);
+    transition: all 0.15s;
+  }
+
+  .map-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .map-legend {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(10,20,35,0.9);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 1px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .map-overlay-label {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  /* LAYER TOGGLES */
+  .layer-toggles {
+    position: absolute;
+    top: 40px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    background: rgba(10,20,35,0.9);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text3);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .layer-toggle.active { color: var(--text2); border-color: var(--border2); }
+  .layer-toggle.active .layer-dot { opacity: 1; }
+
+  .layer-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .energy-panel, .news-panel, .trade-panel {
+    flex: 1;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ENERGY FLOWS */
+  .energy-list {
+    padding: 6px 10px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .energy-route {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .energy-resource {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .energy-flow {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .energy-route-text {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .energy-vol {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .energy-risk {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* NEWS FEED */
+  .news-feed {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .news-item {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .news-item:hover { background: rgba(255,255,255,0.02); }
+
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+
+  .news-region {
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 1px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .region-asia { background: rgba(0,136,204,0.2); color: var(--accent2); }
+  .region-europe { background: rgba(155,89,182,0.2); color: var(--purple); }
+  .region-mideast { background: rgba(255,140,0,0.2); color: var(--orange); }
+  .region-africa { background: rgba(0,255,136,0.15); color: var(--green); }
+  .region-americas { background: rgba(255,59,59,0.15); color: var(--red); }
+
+  .news-time {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text3);
+  }
+
+  .news-title {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  /* BOTTOM PANELS */
+  .bottom-row {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .metric-panel {
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TRADE FLOWS */
+  .trade-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .trade-rank {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    width: 14px;
+  }
+
+  .trade-info { flex: 1; min-width: 0; }
+
+  .trade-pair {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+  }
+
+  .trade-type {
+    font-size: 9px;
+    color: var(--text2);
+  }
+
+  .trade-vol {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--yellow);
+    text-align: right;
+  }
+
+  .trade-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ALLIANCE GRAPH */
+  .alliance-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* MACRO INDICATORS */
+  .indicator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    padding: 1px;
+    flex: 1;
+  }
+
+  .indicator-cell {
+    background: var(--panel2);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .indicator-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .indicator-value {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .indicator-change {
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .ind-red { color: var(--red); }
+  .ind-green { color: var(--green); }
+  .ind-orange { color: var(--orange); }
+  .ind-yellow { color: var(--yellow); }
+  .ind-blue { color: var(--accent); }
+
+  /* SANCTIONS TRACKER */
+  .sanction-list {
+    padding: 6px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .sanction-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    margin-bottom: 2px;
+    background: var(--panel2);
+  }
+
+  .sanction-flag { font-size: 14px; }
+
+  .sanction-info { flex: 1; min-width: 0; }
+
+  .sanction-country {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .sanction-detail {
+    font-size: 9px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sanction-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+  }
+
+  /* SCROLLBAR STYLING */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* MAP SVG STYLES */
+  .country {
+    fill: #0e1e2e;
+    stroke: #1a2840;
+    stroke-width: 0.5;
+    transition: fill 0.3s;
+    cursor: pointer;
+  }
+
+  .country:hover { fill: #162535; stroke: var(--accent2); }
+  .country.critical { fill: rgba(255,59,59,0.25); stroke: rgba(255,59,59,0.5); }
+  .country.high { fill: rgba(255,140,0,0.2); stroke: rgba(255,140,0,0.4); }
+  .country.elevated { fill: rgba(255,215,0,0.15); stroke: rgba(255,215,0,0.3); }
+  .country.moderate { fill: rgba(0,255,136,0.1); stroke: rgba(0,255,136,0.2); }
+
+  .hotspot-ring {
+    fill: none;
+    stroke-width: 1;
+    animation: ring-expand 2s infinite;
+  }
+
+  @keyframes ring-expand {
+    0% { r: 4; opacity: 0.8; }
+    100% { r: 14; opacity: 0; }
+  }
+
+  .hotspot-dot {
+    animation: hotspot-pulse 1.5s infinite;
+  }
+
+  @keyframes hotspot-pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* SCROLLING NEWS TICKER */
+  .ticker-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: rgba(7,11,15,0.95);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 2px 8px;
+    letter-spacing: 2px;
+    flex-shrink: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
+
+  .ticker-track {
+    display: flex;
+    animation: ticker 40s linear infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+  .ticker-item {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    padding: 0 24px;
+    letter-spacing: 0.5px;
+  }
+
+  .ticker-item span { color: var(--accent); }
+
+  /* TOOLTIP */
+  .tooltip {
+    position: fixed;
+    background: rgba(10,20,35,0.97);
+    border: 1px solid var(--border2);
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 1000;
+    min-width: 160px;
+    display: none;
+  }
+
+  .tooltip-title {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 2px;
+    color: var(--text2);
+  }
+
+  .tooltip-row span:last-child { color: var(--text); }
+
+  /* TRADE ARCS */
+  .trade-arc {
+    fill: none;
+    stroke-width: 1;
+    opacity: 0.4;
+    stroke-dasharray: 4 4;
+    animation: dash-flow 3s linear infinite;
+  }
+
+  @keyframes dash-flow { to { stroke-dashoffset: -16; } }
+
+  /* SECTION DIVIDER */
+  .section-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 10px;
+  }
+
+  /* ENERGY BAR CHART */
+  .energy-bars {
+    padding: 8px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .ebar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ebar-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    width: 24px;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+
+  .ebar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .ebar-fill {
+    height: 100%;
+    border-radius: 1px;
+    transition: width 1s ease;
+  }
+
+  .ebar-val {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* PULSING MAP GRID LINES */
+  .grid-line {
+    stroke: rgba(0,212,255,0.04);
+    stroke-width: 0.5;
+  }
+
+  /* FLASH ANIMATION */
+  @keyframes flash-in {
+    from { background: rgba(0,212,255,0.15); }
+    to { background: transparent; }
+  }
+
+  .flash { animation: flash-in 0.8s ease; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">GEOINT</div>
+      <div class="logo-sub">GLOBAL INTELLIGENCE PLATFORM</div>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <button class="tab active" onclick="setTab(this,'overview')">OVERVIEW</button>
+    <button class="tab" onclick="setTab(this,'conflict')">CONFLICTS</button>
+    <button class="tab" onclick="setTab(this,'trade')">TRADE</button>
+    <button class="tab" onclick="setTab(this,'energy')">ENERGY</button>
+    <button class="tab" onclick="setTab(this,'alliances')">ALLIANCES</button>
+  </div>
+
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE FEED</div>
+    <div class="threat-level">
+      <div>
+        <div class="threat-label">GLOBAL THREAT</div>
+        <div class="threat-value">ELEVATED</div>
+      </div>
+    </div>
+    <div class="clock" id="clock">--:--:-- UTC</div>
+  </div>
+</header>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-title" id="tt-title">—</div>
+  <div class="tooltip-row"><span>TENSION</span><span id="tt-tension">—</span></div>
+  <div class="tooltip-row"><span>GDP</span><span id="tt-gdp">—</span></div>
+  <div class="tooltip-row"><span>REGIME</span><span id="tt-regime">—</span></div>
+  <div class="tooltip-row"><span>STATUS</span><span id="tt-status">—</span></div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main">
+
+  <!-- LEFT: TENSION INDEX -->
+  <div class="panel" style="grid-row: span 1;">
+    <div class="panel-header">
+      <div class="panel-title">TENSION INDEX</div>
+      <div class="panel-badge">12 ZONES</div>
+    </div>
+    <div class="tension-list" id="tension-list">
+      <!-- JS populated -->
+    </div>
+  </div>
+
+  <!-- CENTER: MAP -->
+  <div class="panel map-panel">
+    <div class="ticker-wrap">
+      <div class="ticker-label">INTEL</div>
+      <div style="overflow:hidden;flex:1;position:relative;">
+        <div class="ticker-track" id="ticker">
+          <!-- JS populated -->
+        </div>
+      </div>
+    </div>
+    <div class="map-container" style="margin-top:24px;">
+      <div class="map-overlay-label">STRATEGIC OVERVIEW — MERCATOR PROJECTION</div>
+      <svg id="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+        <!-- Grid lines -->
+        <g id="grid-layer">
+          <line class="grid-line" x1="0" y1="125" x2="1000" y2="125"/>
+          <line class="grid-line" x1="0" y1="250" x2="1000" y2="250"/>
+          <line class="grid-line" x1="0" y1="375" x2="1000" y2="375"/>
+          <line class="grid-line" x1="250" y1="0" x2="250" y2="500"/>
+          <line class="grid-line" x1="500" y1="0" x2="500" y2="500"/>
+          <line class="grid-line" x1="750" y1="0" x2="750" y2="500"/>
+        </g>
+
+        <!-- Continents (simplified but geographically plausible shapes) -->
+        <g id="countries-layer">
+          <!-- NORTH AMERICA -->
+          <path class="country" d="M 80 60 L 220 55 L 240 80 L 230 130 L 210 160 L 200 180 L 185 195 L 170 200 L 155 210 L 145 225 L 130 220 L 110 200 L 95 180 L 80 155 L 70 130 Z" data-name="United States" data-tension="52" data-gdp="$25.5T" data-regime="Federal Republic" data-status="STABLE"/>
+          <path class="country elevated" d="M 80 60 L 180 50 L 200 35 L 185 20 L 160 15 L 120 20 L 90 35 L 75 50 Z" data-name="Canada" data-tension="22" data-gdp="$2.1T" data-regime="Constitutional Monarchy" data-status="STABLE"/>
+          <path class="country" d="M 130 220 L 155 210 L 165 230 L 155 250 L 140 255 L 125 245 Z" data-name="Mexico" data-tension="48" data-gdp="$1.3T" data-regime="Federal Republic" data-status="MODERATE"/>
+
+          <!-- SOUTH AMERICA -->
+          <path class="country" d="M 160 265 L 205 255 L 225 270 L 235 310 L 240 355 L 220 400 L 195 420 L 175 415 L 160 390 L 150 350 L 145 305 L 148 275 Z" data-name="Brazil" data-tension="35" data-gdp="$1.9T" data-regime="Federal Republic" data-status="MODERATE"/>
+          <path class="country" d="M 140 260 L 160 265 L 148 275 L 145 305 L 135 310 L 120 290 L 115 270 Z" data-name="Colombia" data-tension="58" data-gdp="$0.3T" data-regime="Presidential Republic" data-status="HIGH"/>
+          <path class="country" d="M 155 360 L 175 415 L 160 430 L 145 420 L 140 390 Z" data-name="Argentina" data-tension="40" data-gdp="$0.6T" data-regime="Federal Republic" data-status="MODERATE"/>
+
+          <!-- EUROPE -->
+          <path class="country elevated" d="M 420 60 L 500 55 L 510 75 L 505 100 L 490 115 L 470 120 L 455 115 L 440 100 L 425 85 Z" data-name="Russia (West)" data-tension="91" data-gdp="$1.8T" data-regime="Federal Semi-Presidential" data-status="CRITICAL"/>
+          <path class="country" d="M 430 110 L 475 105 L 485 130 L 470 145 L 450 150 L 435 140 L 428 125 Z" data-name="Ukraine" data-tension="97" data-gdp="$0.1T" data-regime="Presidential Republic" data-status="CRITICAL"/>
+          <path class="country" d="M 390 100 L 420 95 L 430 110 L 428 125 L 415 135 L 400 130 L 385 115 Z" data-name="Poland/Baltics" data-tension="68" data-gdp="$0.7T" data-regime="Parliamentary" data-status="HIGH"/>
+          <path class="country" d="M 350 105 L 390 100 L 385 115 L 375 130 L 355 128 L 345 115 Z" data-name="Germany" data-tension="30" data-gdp="$4.1T" data-regime="Federal Republic" data-status="STABLE"/>
+          <path class="country" d="M 330 120 L 350 105 L 345 115 L 340 135 L 325 138 L 318 128 Z" data-name="France" data-tension="28" data-gdp="$3.0T" data-regime="Semi-Presidential Republic" data-status="STABLE"/>
+          <path class="country" d="M 310 100 L 330 95 L 330 120 L 318 128 L 305 120 L 302 108 Z" data-name="United Kingdom" data-tension="25" data-gdp="$3.1T" data-regime="Constitutional Monarchy" data-status="STABLE"/>
+          <path class="country" d="M 395 135 L 420 130 L 430 150 L 420 165 L 400 170 L 385 158 L 388 142 Z" data-name="Romania/Bulgaria" data-tension="45" data-gdp="$0.4T" data-regime="Parliamentary" data-status="MODERATE"/>
+
+          <!-- MIDDLE EAST -->
+          <path class="country critical" d="M 520 145 L 570 140 L 580 165 L 570 185 L 545 190 L 525 180 L 515 165 Z" data-name="Iran" data-tension="88" data-gdp="$0.4T" data-regime="Islamic Republic" data-status="CRITICAL"/>
+          <path class="country high" d="M 490 155 L 520 145 L 515 165 L 505 180 L 490 178 L 482 165 Z" data-name="Iraq/Syria" data-tension="82" data-gdp="$0.2T" data-regime="Contested" data-status="HIGH"/>
+          <path class="country high" d="M 468 160 L 490 155 L 482 165 L 475 185 L 460 188 L 455 172 Z" data-name="Israel/Palestine" data-tension="95" data-gdp="$0.5T" data-regime="Parliamentary Democracy" data-status="CRITICAL"/>
+          <path class="country" d="M 490 178 L 530 175 L 540 200 L 520 215 L 495 210 L 485 195 Z" data-name="Saudi Arabia" data-tension="55" data-gdp="$1.1T" data-regime="Absolute Monarchy" data-status="ELEVATED"/>
+          <path class="country" d="M 455 172 L 475 185 L 470 200 L 455 205 L 445 193 L 448 180 Z" data-name="Egypt" data-tension="50" data-gdp="$0.4T" data-regime="Presidential Republic" data-status="MODERATE"/>
+
+          <!-- AFRICA -->
+          <path class="country" d="M 400 200 L 450 193 L 460 220 L 455 260 L 440 280 L 420 285 L 400 270 L 388 240 L 390 215 Z" data-name="North Africa" data-tension="60" data-gdp="$0.5T" data-regime="Various" data-status="HIGH"/>
+          <path class="country high" d="M 440 280 L 490 270 L 510 300 L 505 340 L 480 360 L 455 355 L 440 330 L 435 300 Z" data-name="East Africa" data-tension="72" data-gdp="$0.3T" data-regime="Various" data-status="HIGH"/>
+          <path class="country elevated" d="M 390 290 L 440 280 L 435 300 L 440 330 L 420 345 L 395 340 L 375 315 L 378 295 Z" data-name="Central Africa" data-tension="76" data-gdp="$0.15T" data-regime="Various" data-status="HIGH"/>
+          <path class="country" d="M 375 345 L 420 345 L 440 370 L 430 410 L 405 420 L 380 415 L 362 390 L 358 365 Z" data-name="Southern Africa" data-tension="38" data-gdp="$0.4T" data-regime="Various" data-status="MODERATE"/>
+
+          <!-- RUSSIA (EAST) -->
+          <path class="country critical" d="M 500 30 L 760 25 L 770 70 L 740 90 L 680 100 L 600 95 L 540 85 L 510 65 Z" data-name="Russia" data-tension="91" data-gdp="$1.8T" data-regime="Federal Semi-Presidential" data-status="CRITICAL"/>
+
+          <!-- CENTRAL ASIA -->
+          <path class="country" d="M 570 95 L 650 90 L 660 120 L 645 145 L 610 150 L 580 140 L 568 120 Z" data-name="Central Asia" data-tension="45" data-gdp="$0.3T" data-regime="Various" data-status="MODERATE"/>
+
+          <!-- SOUTH ASIA -->
+          <path class="country high" d="M 610 150 L 660 145 L 675 175 L 665 210 L 640 225 L 615 220 L 600 195 L 598 165 Z" data-name="India" data-tension="62" data-gdp="$3.7T" data-regime="Federal Republic" data-status="HIGH"/>
+          <path class="country high" d="M 580 140 L 610 150 L 598 165 L 583 168 L 570 155 Z" data-name="Pakistan" data-tension="74" data-gdp="$0.3T" data-regime="Federal Republic" data-status="HIGH"/>
+          <path class="country" d="M 655 175 L 685 170 L 692 195 L 680 210 L 665 210 L 660 195 Z" data-name="Bangladesh/Myanmar" data-tension="58" data-gdp="$0.4T" data-regime="Various" data-status="HIGH"/>
+
+          <!-- CHINA -->
+          <path class="country high" d="M 660 70 L 780 65 L 800 90 L 795 130 L 770 155 L 735 165 L 700 160 L 675 145 L 660 120 Z" data-name="China" data-tension="79" data-gdp="$17.7T" data-regime="One-Party State" data-status="HIGH"/>
+
+          <!-- SE ASIA -->
+          <path class="country" d="M 720 165 L 760 160 L 775 185 L 765 205 L 740 210 L 720 200 L 715 182 Z" data-name="SE Asia" data-tension="55" data-gdp="$1.2T" data-regime="Various" data-status="ELEVATED"/>
+          <path class="country" d="M 760 175 L 800 170 L 820 195 L 810 225 L 780 230 L 758 215 L 755 195 Z" data-name="Philippines/Taiwan" data-tension="83" data-gdp="$0.6T" data-regime="Presidential Republic" data-status="CRITICAL"/>
+
+          <!-- KOREA/JAPAN -->
+          <path class="country critical" d="M 790 90 L 820 85 L 830 105 L 820 120 L 800 122 L 788 108 Z" data-name="North Korea" data-tension="89" data-gdp="$0.04T" data-regime="One-Party Dictatorship" data-status="CRITICAL"/>
+          <path class="country" d="M 820 105 L 845 100 L 852 120 L 840 135 L 822 135 L 818 118 Z" data-name="Japan" data-tension="44" data-gdp="$4.2T" data-regime="Constitutional Monarchy" data-status="MODERATE"/>
+          <path class="country" d="M 800 122 L 820 120 L 818 135 L 805 140 L 795 133 Z" data-name="South Korea" data-tension="50" data-gdp="$1.7T" data-regime="Presidential Republic" data-status="ELEVATED"/>
+
+          <!-- AUSTRALIA -->
+          <path class="country" d="M 760 310 L 870 305 L 890 340 L 880 390 L 850 415 L 810 420 L 775 400 L 750 360 L 748 325 Z" data-name="Australia" data-tension="18" data-gdp="$1.7T" data-regime="Constitutional Monarchy" data-status="STABLE"/>
+        </g>
+
+        <!-- Trade arc layer -->
+        <g id="trade-arcs-layer">
+          <!-- US - Europe -->
+          <path class="trade-arc" stroke="#ffd700" d="M 180 140 Q 300 20 430 130"/>
+          <!-- China - Europe -->
+          <path class="trade-arc" stroke="#ffd700" d="M 720 120 Q 600 60 460 115"/>
+          <!-- China - US -->
+          <path class="trade-arc" stroke="rgba(255,215,0,0.3)" d="M 730 130 Q 400 480 185 155" style="stroke-dasharray:6 8"/>
+          <!-- Middle East - Europe (energy) -->
+          <path class="trade-arc" stroke="#ff8c00" d="M 510 170 Q 460 130 425 125"/>
+          <!-- Middle East - China (energy) -->
+          <path class="trade-arc" stroke="#ff8c00" d="M 545 175 Q 630 150 660 135"/>
+          <!-- Russia - Europe (energy disrupted) -->
+          <path class="trade-arc" stroke="rgba(255,59,59,0.4)" d="M 510 70 Q 470 80 430 105" style="stroke-dasharray:3 6"/>
+        </g>
+
+        <!-- Hotspots layer -->
+        <g id="hotspots-layer">
+          <!-- Ukraine -->
+          <circle class="hotspot-ring" cx="450" cy="120" r="6" stroke="#ff3b3b"/>
+          <circle class="hotspot-dot" cx="450" cy="120" r="4" fill="#ff3b3b"/>
+          <!-- Gaza -->
+          <circle class="hotspot-ring" cx="463" cy="172" r="5" stroke="#ff3b3b"/>
+          <circle class="hotspot-dot" cx="463" cy="172" r="3" fill="#ff3b3b"/>
+          <!-- Taiwan Strait -->
+          <circle class="hotspot-ring" cx="790" cy="195" r="5" stroke="#ff8c00"/>
+          <circle class="hotspot-dot" cx="790" cy="195" r="3" fill="#ff8c00"/>
+          <!-- N Korea -->
+          <circle class="hotspot-ring" cx="808" cy="105" r="5" stroke="#ff3b3b"/>
+          <circle class="hotspot-dot" cx="808" cy="105" r="3" fill="#ff3b3b"/>
+          <!-- South China Sea -->
+          <circle class="hotspot-ring" cx="755" cy="200" r="5" stroke="#ff8c00"/>
+          <circle class="hotspot-dot" cx="755" cy="200" r="3" fill="#ff8c00"/>
+          <!-- Iran -->
+          <circle class="hotspot-ring" cx="550" cy="165" r="5" stroke="#ff8c00"/>
+          <circle class="hotspot-dot" cx="550" cy="165" r="3" fill="#ff8c00"/>
+          <!-- Sahel -->
+          <circle class="hotspot-ring" cx="415" cy="290" r="5" stroke="#ffd700"/>
+          <circle class="hotspot-dot" cx="415" cy="290" r="3" fill="#ffd700"/>
+        </g>
+      </svg>
+
+      <!-- Layer toggles -->
+      <div class="layer-toggles">
+        <div class="layer-toggle active" onclick="toggleLayer(this,'trade-arcs-layer')">
+          <div class="layer-dot" style="background:var(--yellow)"></div>TRADE FLOWS
+        </div>
+        <div class="layer-toggle active" onclick="toggleLayer(this,'hotspots-layer')">
+          <div class="layer-dot" style="background:var(--red)"></div>HOTSPOTS
+        </div>
+        <div class="layer-toggle active" onclick="toggleLayer(this,'grid-layer')">
+          <div class="layer-dot" style="background:var(--accent)"></div>GRID
+        </div>
+      </div>
+
+      <!-- Map controls -->
+      <div class="map-controls">
+        <div class="map-btn">+</div>
+        <div class="map-btn">−</div>
+        <div class="map-btn">⌖</div>
+      </div>
+
+      <!-- Legend -->
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>CRITICAL (85+)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>HIGH (65–84)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>ELEVATED (45–64)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>MODERATE (&lt;45)</div>
+        <div class="legend-item" style="margin-top:4px"><div style="width:16px;height:1px;background:var(--yellow);border-top:1px dashed var(--yellow)"></div>TRADE ARC</div>
+        <div class="legend-item"><div style="width:16px;height:1px;background:var(--orange)"></div>ENERGY FLOW</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <!-- ENERGY INFLUENCE -->
+    <div class="energy-panel">
+      <div class="panel-header">
+        <div class="panel-title">⚡ ENERGY FLOWS</div>
+        <div class="panel-badge">6 ROUTES</div>
+      </div>
+      <div class="energy-list">
+        <div class="energy-route">
+          <div class="energy-resource">🛢️</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">RUSSIA → EU (DISRUPTED)</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:15%;height:100%;background:var(--red);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol" style="color:var(--red)">↓85%</div>
+          <div class="energy-risk" style="background:var(--red)"></div>
+        </div>
+        <div class="energy-route">
+          <div class="energy-resource">🛢️</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">GULF → ASIA PACIFIC</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:78%;height:100%;background:var(--orange);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol">+3.2%</div>
+          <div class="energy-risk" style="background:var(--orange)"></div>
+        </div>
+        <div class="energy-route">
+          <div class="energy-resource">⚡</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">US LNG → EUROPE</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:92%;height:100%;background:var(--accent);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol">+62%</div>
+          <div class="energy-risk" style="background:var(--green)"></div>
+        </div>
+        <div class="energy-route">
+          <div class="energy-resource">⛏️</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">CONGO → CHINA (COBALT)</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:88%;height:100%;background:var(--purple);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol">+12%</div>
+          <div class="energy-risk" style="background:var(--orange)"></div>
+        </div>
+        <div class="energy-route">
+          <div class="energy-resource">☢️</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">RUSSIA → URANIUM MKT</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:44%;height:100%;background:var(--yellow);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol" style="color:var(--yellow)">SANCT</div>
+          <div class="energy-risk" style="background:var(--yellow)"></div>
+        </div>
+        <div class="energy-route">
+          <div class="energy-resource">🌾</div>
+          <div class="energy-flow">
+            <div class="energy-route-text">BLACK SEA GRAIN CORRIDOR</div>
+            <div style="width:100%;height:2px;background:var(--border);margin-top:2px;border-radius:1px;overflow:hidden">
+              <div style="width:30%;height:100%;background:var(--red);border-radius:1px"></div>
+            </div>
+          </div>
+          <div class="energy-vol" style="color:var(--red)">BLOCK</div>
+          <div class="energy-risk" style="background:var(--red)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEWS FEED -->
+    <div class="news-panel" style="flex:1.8">
+      <div class="panel-header">
+        <div class="panel-title">📡 INTEL FEED</div>
+        <div class="panel-badge" style="color:var(--green)">● LIVE</div>
+      </div>
+      <div class="news-feed" id="news-feed">
+        <!-- JS populated -->
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+
+    <!-- TRADE DEALS -->
+    <div class="metric-panel">
+      <div class="panel-header">
+        <div class="panel-title">💹 TRADE CORRIDORS</div>
+        <div class="panel-badge">TOP 6</div>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <div class="trade-item">
+          <div class="trade-rank">01</div>
+          <div class="trade-info">
+            <div class="trade-pair">US ↔ EU</div>
+            <div class="trade-type">GOODS + SERVICES</div>
+          </div>
+          <div>
+            <div class="trade-vol">$1.3T</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--green);text-align:right">▲ 2.1%</div>
+          </div>
+          <div class="trade-status" style="background:var(--green)"></div>
+        </div>
+        <div class="trade-item">
+          <div class="trade-rank">02</div>
+          <div class="trade-info">
+            <div class="trade-pair">US ↔ CHINA</div>
+            <div class="trade-type">GOODS (TARIFFS ACTIVE)</div>
+          </div>
+          <div>
+            <div class="trade-vol">$575B</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--red);text-align:right">▼ 8.3%</div>
+          </div>
+          <div class="trade-status" style="background:var(--orange)"></div>
+        </div>
+        <div class="trade-item">
+          <div class="trade-rank">03</div>
+          <div class="trade-info">
+            <div class="trade-pair">CHINA ↔ ASEAN</div>
+            <div class="trade-type">RCEP FRAMEWORK</div>
+          </div>
+          <div>
+            <div class="trade-vol">$975B</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--green);text-align:right">▲ 11.2%</div>
+          </div>
+          <div class="trade-status" style="background:var(--green)"></div>
+        </div>
+        <div class="trade-item">
+          <div class="trade-rank">04</div>
+          <div class="trade-info">
+            <div class="trade-pair">RUSSIA ↔ CHINA</div>
+            <div class="trade-type">ENERGY + ARMS</div>
+          </div>
+          <div>
+            <div class="trade-vol">$240B</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--red);text-align:right">▲ 28%</div>
+          </div>
+          <div class="trade-status" style="background:var(--red)"></div>
+        </div>
+        <div class="trade-item">
+          <div class="trade-rank">05</div>
+          <div class="trade-info">
+            <div class="trade-pair">EU ↔ INDIA</div>
+            <div class="trade-type">FTA NEGOTIATIONS</div>
+          </div>
+          <div>
+            <div class="trade-vol">$116B</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--yellow);text-align:right">● PENDING</div>
+          </div>
+          <div class="trade-status" style="background:var(--yellow)"></div>
+        </div>
+        <div class="trade-item">
+          <div class="trade-rank">06</div>
+          <div class="trade-info">
+            <div class="trade-pair">GULF ↔ INDIA</div>
+            <div class="trade-type">CEPA ACTIVE</div>
+          </div>
+          <div>
+            <div class="trade-vol">$84B</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--green);text-align:right">▲ 17%</div>
+          </div>
+          <div class="trade-status" style="background:var(--green)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACRO INDICATORS -->
+    <div class="metric-panel">
+      <div class="panel-header">
+        <div class="panel-title">📊 MACRO INDICATORS</div>
+        <div class="panel-badge">GLOBAL</div>
+      </div>
+      <div class="indicator-grid">
+        <div class="indicator-cell">
+          <div class="indicator-label">CONFLICT ZONES</div>
+          <div class="indicator-value ind-red">34</div>
+          <div class="indicator-change ind-red">▲ +3 YTD</div>
+        </div>
+        <div class="indicator-cell">
+          <div class="indicator-label">SANCTIONS REGIMES</div>
+          <div class="indicator-value ind-orange">18</div>
+          <div class="indicator-change ind-red">▲ +5 YTD</div>
+        </div>
+        <div class="indicator-cell">
+          <div class="indicator-label">DISPLACED PERSONS</div>
+          <div class="indicator-value ind-yellow">117M</div>
+          <div class="indicator-change ind-red">▲ +8M</div>
+        </div>
+        <div class="indicator-cell">
+          <div class="indicator-label">NUCLEAR STATES</div>
+          <div class="indicator-value ind-blue">9</div>
+          <div class="indicator-change" style="color:var(--text3)">● STABLE</div>
+        </div>
+        <div class="indicator-cell">
+          <div class="indicator-label">GLOBAL TRADE VOL</div>
+          <div class="indicator-value ind-green">$33T</div>
+          <div class="indicator-change ind-green">▼ -1.2%</div>
+        </div>
+        <div class="indicator-cell">
+          <div class="indicator-label">DOLLAR DOMINANCE</div>
+          <div class="indicator-value ind-yellow">58%</div>
+          <div class="indicator-change ind-red">▼ -4pp</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SANCTIONS TRACKER -->
+    <div class="metric-panel">
+      <div class="panel-header">
+        <div class="panel-title">🚫 SANCTIONS MAP</div>
+        <div class="panel-badge">ACTIVE: 18</div>
+      </div>
+      <div class="sanction-list">
+        <div class="sanction-item">
+          <div class="sanction-flag">🇷🇺</div>
+          <div class="sanction-info">
+            <div class="sanction-country">RUSSIA</div>
+            <div class="sanction-detail">Financial, Energy, Defense, Dual-use</div>
+          </div>
+          <div class="sanction-count">16,500+</div>
+        </div>
+        <div class="sanction-item">
+          <div class="sanction-flag">🇮🇷</div>
+          <div class="sanction-info">
+            <div class="sanction-country">IRAN</div>
+            <div class="sanction-detail">Nuclear, Oil, IRGC, Terror-list</div>
+          </div>
+          <div class="sanction-count">3,200+</div>
+        </div>
+        <div class="sanction-item">
+          <div class="sanction-flag">🇰🇵</div>
+          <div class="sanction-info">
+            <div class="sanction-country">NORTH KOREA</div>
+            <div class="sanction-detail">WMD, Missile, Coal, Seafood</div>
+          </div>
+          <div class="sanction-count">2,100+</div>
+        </div>
+        <div class="sanction-item">
+          <div class="sanction-flag">🇨🇳</div>
+          <div class="sanction-info">
+            <div class="sanction-country">CHINA (TARGETED)</div>
+            <div class="sanction-detail">Tech transfer, Xinjiang, Military</div>
+          </div>
+          <div class="sanction-count">800+</div>
+        </div>
+        <div class="sanction-item">
+          <div class="sanction-flag">🇸🇾</div>
+          <div class="sanction-info">
+            <div class="sanction-country">SYRIA</div>
+            <div class="sanction-detail">Caesar Act, Oil, Arms embargo</div>
+          </div>
+          <div class="sanction-count">900+</div>
+        </div>
+        <div class="sanction-item">
+          <div class="sanction-flag">🇲🇲</div>
+          <div class="sanction-info">
+            <div class="sanction-country">MYANMAR</div>
+            <div class="sanction-detail">Military junta, Human rights</div>
+          </div>
+          <div class="sanction-count">340+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALLIANCE NETWORK -->
+    <div class="metric-panel">
+      <div class="panel-header">
+        <div class="panel-title">🔗 ALLIANCE NETWORK</div>
+        <div class="panel-badge">LIVE</div>
+      </div>
+      <div class="alliance-canvas">
+        <canvas id="allianceCanvas"></canvas>
+      </div>
+    </div>
+
+  </div><!-- end bottom-row -->
+
+</div><!-- end main -->
+
+<script>
+// CLOCK
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getUTCHours()).padStart(2,'0');
+  const m = String(now.getUTCMinutes()).padStart(2,'0');
+  const s = String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s} UTC`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// TABS
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// LAYER TOGGLE
+function toggleLayer(el, layerId) {
+  el.classList.toggle('active');
+  const layer = document.getElementById(layerId);
+  if (layer) layer.style.display = el.classList.contains('active') ? '' : 'none';
+}
+
+// TENSION DATA
+const tensionData = [
+  { name: 'UKRAINE / RUSSIA', desc: 'Active armed conflict', score: 97, level: 'critical', delta: '+2', flag: '🇺🇦' },
+  { name: 'ISRAEL / PALESTINE', desc: 'Gaza conflict ongoing', score: 95, level: 'critical', delta: '+1', flag: '🇮🇱' },
+  { name: 'NORTH KOREA', desc: 'Missile tests & provocation', score: 89, level: 'critical', delta: '0', flag: '🇰🇵' },
+  { name: 'IRAN NUCLEAR', desc: '60% enrichment threshold', score: 88, level: 'critical', delta: '+3', flag: '🇮🇷' },
+  { name: 'TAIWAN STRAIT', desc: 'PLA exercises escalating', score: 83, level: 'critical', delta: '+5', flag: '🇹🇼' },
+  { name: 'CHINA / US TECH', desc: 'Semiconductor war', score: 79, level: 'high', delta: '+2', flag: '🇨🇳' },
+  { name: 'PAKISTAN / INDIA', desc: 'LoC violations rising', score: 74, level: 'high', delta: '-1', flag: '🇵🇰' },
+  { name: 'SAHEL REGION', desc: 'Wagner/coup instability', score: 72, level: 'high', delta: '+4', flag: '🌍' },
+  { name: 'EAST AFRICA', desc: 'Sudan civil conflict', score: 70, level: 'high', delta: '+2', flag: '🌍' },
+  { name: 'BALTICS / NATO', desc: 'Russian border pressure', score: 68, level: 'high', delta: '+1', flag: '🇪🇪' },
+  { name: 'SOUTH CHINA SEA', desc: 'Philippines standoff', score: 65, level: 'high', delta: '+3', flag: '🌊' },
+  { name: 'COLOMBIA', desc: 'FARC renegotiation', score: 58, level: 'elevated', delta: '-2', flag: '🇨🇴' },
+];
+
+function renderTensionList() {
+  const list = document.getElementById('tension-list');
+  list.innerHTML = tensionData.map((t,i) => `
+    <div class="tension-item ${t.level}" onclick="selectZone(this,${i})">
+      <div class="flag">${t.flag}</div>
+      <div class="tension-info">
+        <div class="tension-name">${t.name}</div>
+        <div class="tension-desc">${t.desc}</div>
+      </div>
+      <div class="tension-score-wrap">
+        <div class="tension-score">${t.score}</div>
+        <div class="tension-bar-wrap"><div class="tension-bar" style="width:${t.score}%"></div></div>
+        <div class="tension-delta ${parseInt(t.delta)>0?'delta-up':'delta-down'}">${t.delta>0?'+':''}${t.delta}</div>
+      </div>
+    </div>
+  `).join('');
+}
+renderTensionList();
+
+function selectZone(el, i) {
+  document.querySelectorAll('.tension-item').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// NEWS FEED
+const newsItems = [
+  { region: 'EUROPE', cls: 'region-europe', time: '2m ago', title: 'NATO summit approves additional air defense packages for Eastern flank' },
+  { region: 'MIDEAST', cls: 'region-mideast', time: '7m ago', title: 'IAEA reports Iran has accelerated centrifuge installation at Fordow facility' },
+  { region: 'ASIA', cls: 'region-asia', time: '12m ago', title: 'PLA conducts live-fire exercises 40nm from Taiwan's northern coast' },
+  { region: 'EUROPE', cls: 'region-europe', time: '18m ago', title: 'EU emergency council convened over new Russian oil price cap circumvention routes' },
+  { region: 'ASIA', cls: 'region-asia', time: '24m ago', title: 'Philippines Coast Guard intercepts Chinese vessel near Scarborough Shoal' },
+  { region: 'AFRICA', cls: 'region-africa', time: '31m ago', title: 'Wagner-backed forces advance on Bamako; French assets evacuated' },
+  { region: 'AMERICAS', cls: 'region-americas', time: '38m ago', title: 'US Treasury issues new OFAC designations targeting 43 Russia-linked entities' },
+  { region: 'MIDEAST', cls: 'region-mideast', time: '45m ago', title: 'Houthi drone strike intercepts near Strait of Bab-el-Mandeb; oil up 1.8%' },
+  { region: 'ASIA', cls: 'region-asia', time: '52m ago', title: 'North Korea test-fires ICBM variant capable of reaching CONUS, per USFK' },
+  { region: 'AMERICAS', cls: 'region-americas', time: '1h ago', title: 'G7 finance ministers signal coordinated response to yuan internationalization push' },
+];
+
+function renderNews() {
+  const feed = document.getElementById('news-feed');
+  feed.innerHTML = newsItems.map(n => `
+    <div class="news-item">
+      <div class="news-meta">
+        <span class="news-region ${n.cls}">${n.region}</span>
+        <span class="news-time">${n.time}</span>
+      </div>
+      <div class="news-title">${n.title}</div>
+    </div>
+  `).join('');
+}
+renderNews();
+
+// Rotate news every 12 seconds
+let newsIdx = 0;
+setInterval(() => {
+  const feed = document.getElementById('news-feed');
+  const newItems = [
+    { region: 'ASIA', cls: 'region-asia', time: 'JUST NOW', title: 'South Korea places military on elevated readiness following DPRK announcement' },
+    { region: 'EUROPE', cls: 'region-europe', time: 'JUST NOW', title: 'Germany announces €50B defense spending increase; Bundeswehr expansion begins' },
+    { region: 'MIDEAST', cls: 'region-mideast', time: 'JUST NOW', title: 'Saudi-Iran normalization talks stall over Yemen ceasefire terms' },
+  ];
+  const item = newItems[newsIdx % newItems.length];
+  newsIdx++;
+  const el = document.createElement('div');
+  el.className = 'news-item flash';
+  el.innerHTML = `
+    <div class="news-meta">
+      <span class="news-region ${item.cls}">${item.region}</span>
+      <span class="news-time" style="color:var(--accent)">${item.time}</span>
+    </div>
+    <div class="news-title">${item.title}</div>
+  `;
+  feed.insertBefore(el, feed.firstChild);
+  if (feed.children.length > 12) feed.removeChild(feed.lastChild);
+}, 12000);
+
+// TICKER
+const tickerItems = [
+  'UKRAINE CONFLICT — Day 1,000+ — Front line stabilized near Zaporizhzhia',
+  'TAIWAN STRAIT — DEFCON advisory upgraded by INDOPACOM',
+  'OIL PRICES — Brent $88.4 (+2.1%) — WTI $84.1 (+1.9%)',
+  'IRAN NUCLEAR — IAEA: 95kg of 60%-enriched uranium stockpiled',
+  'NORTH KOREA — Kim orders "exponential" nuclear expansion',
+  'EU SANCTIONS — Package 14 targets shadow fleet financing',
+  'CHINA GDP — Q3 growth 4.6%, below 5% target',
+  'IMF — Global debt at record $307 trillion',
+  'NATO — Article 5 consultations called over Baltic incident',
+  'GOLD — $2,385/oz as central banks accelerate de-dollarization',
+];
+
+function renderTicker() {
+  const ticker = document.getElementById('ticker');
+  const allItems = [...tickerItems, ...tickerItems]; // duplicate for seamless loop
+  ticker.innerHTML = allItems.map(item =>
+    `<div class="ticker-item">◆ <span>${item.split(' — ')[0]}</span> — ${item.split(' — ').slice(1).join(' — ')}</div>`
+  ).join('');
+}
+renderTicker();
+
+// TOOLTIP ON MAP COUNTRIES
+document.querySelectorAll('.country').forEach(el => {
+  el.addEventListener('mousemove', (e) => {
+    const tt = document.getElementById('tooltip');
+    const name = el.getAttribute('data-name');
+    if (!name) return;
+    tt.style.display = 'block';
+    tt.style.left = (e.clientX + 14) + 'px';
+    tt.style.top = (e.clientY - 40) + 'px';
+    document.getElementById('tt-title').textContent = name;
+    document.getElementById('tt-tension').textContent = el.getAttribute('data-tension') || '—';
+    document.getElementById('tt-gdp').textContent = el.getAttribute('data-gdp') || '—';
+    document.getElementById('tt-regime').textContent = el.getAttribute('data-regime') || '—';
+    document.getElementById('tt-status').textContent = el.getAttribute('data-status') || '—';
+  });
+  el.addEventListener('mouseleave', () => {
+    document.getElementById('tooltip').style.display = 'none';
+  });
+});
+
+// ALLIANCE CANVAS VISUALIZATION
+function drawAlliances() {
+  const canvas = document.getElementById('allianceCanvas');
+  const container = canvas.parentElement;
+  canvas.width = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+
+  const nodes = [
+    { id: 'US',   x: W*0.2,  y: H*0.35, color: '#00d4ff', r: 14 },
+    { id: 'EU',   x: W*0.35, y: H*0.25, color: '#9b59b6', r: 11 },
+    { id: 'NATO', x: W*0.28, y: H*0.55, color: '#00d4ff', r: 9  },
+    { id: 'RU',   x: W*0.55, y: H*0.2,  color: '#ff3b3b', r: 12 },
+    { id: 'CN',   x: W*0.75, y: H*0.3,  color: '#ff8c00', r: 13 },
+    { id: 'IN',   x: W*0.68, y: H*0.65, color: '#ffd700', r: 10 },
+    { id: 'SCO',  x: W*0.65, y: H*0.48, color: '#ff8c00', r: 8  },
+    { id: 'KSA',  x: W*0.5,  y: H*0.75, color: '#00ff88', r: 8  },
+    { id: 'IL',   x: W*0.42, y: H*0.72, color: '#00d4ff', r: 7  },
+    { id: 'UK',   x: W*0.18, y: H*0.2,  color: '#00d4ff', r: 8  },
+    { id: 'JP',   x: W*0.88, y: H*0.28, color: '#00d4ff', r: 8  },
+    { id: 'KP',   x: W*0.82, y: H*0.18, color: '#ff3b3b', r: 6  },
+  ];
+
+  const links = [
+    { a:'US', b:'EU', type:'ally', strength: 0.9 },
+    { a:'US', b:'NATO', type:'ally', strength: 1.0 },
+    { a:'EU', b:'NATO', type:'ally', strength: 0.8 },
+    { a:'UK', b:'US', type:'ally', strength: 0.95 },
+    { a:'UK', b:'EU', type:'partner', strength: 0.5 },
+    { a:'US', b:'JP', type:'ally', strength: 0.85 },
+    { a:'US', b:'IL', type:'ally', strength: 0.9 },
+    { a:'US', b:'KSA', type:'partner', strength: 0.5 },
+    { a:'RU', b:'CN', type:'partner', strength: 0.85 },
+    { a:'RU', b:'KP', type:'partner', strength: 0.7 },
+    { a:'CN', b:'SCO', type:'ally', strength: 0.8 },
+    { a:'RU', b:'SCO', type:'ally', strength: 0.8 },
+    { a:'IN', b:'SCO', type:'partner', strength: 0.5 },
+    { a:'IN', b:'US', type:'partner', strength: 0.6 },
+    { a:'CN', b:'KP', type:'partner', strength: 0.6 },
+    { a:'US', b:'RU', type:'rival', strength: 0.9 },
+    { a:'US', b:'CN', type:'rival', strength: 0.85 },
+    { a:'IL', b:'KSA', type:'partner', strength: 0.4 },
+    { a:'JP', b:'KP', type:'rival', strength: 0.7 },
+  ];
+
+  const nodeMap = {};
+  nodes.forEach(n => nodeMap[n.id] = n);
+
+  // Draw links
+  links.forEach(l => {
+    const a = nodeMap[l.a], b = nodeMap[l.b];
+    if (!a || !b) return;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    if (l.type === 'ally') {
+      ctx.strokeStyle = `rgba(0,212,255,${l.strength * 0.5})`;
+      ctx.lineWidth = l.strength * 2;
+      ctx.setLineDash([]);
+    } else if (l.type === 'partner') {
+      ctx.strokeStyle = `rgba(255,215,0,${l.strength * 0.5})`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3,4]);
+    } else {
+      ctx.strokeStyle = `rgba(255,59,59,${l.strength * 0.5})`;
+      ctx.lineWidth = l.strength * 1.5;
+      ctx.setLineDash([2,3]);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    // Glow
+    const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.5);
+    grad.addColorStop(0, n.color + '40');
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r * 2.5, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    ctx.fillStyle = n.color + '33';
+    ctx.fill();
+    ctx.strokeStyle = n.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = n.color;
+    ctx.font = `bold ${Math.max(8, n.r * 0.75)}px 'Share Tech Mono'`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n.id, n.x, n.y);
+  });
+
+  // Legend
+  ctx.font = '8px Share Tech Mono';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#3a5570';
+  ctx.fillText('━ ALLIANCE', 8, H-28);
+  ctx.fillStyle = '#3a5570';
+  ctx.fillText('╌ PARTNER', 8, H-18);
+  ctx.fillStyle = '#3a5570';
+  ctx.fillText('╌ RIVALRY', 8, H-8);
+}
+
+// Animate alliance graph
+let animFrame = 0;
+function animateAlliances() {
+  drawAlliances();
+  requestAnimationFrame(animateAlliances);
+}
+animateAlliances();
+
+// Resize
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('allianceCanvas');
+  const container = canvas.parentElement;
+  canvas.width = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+  drawAlliances();
+});
+</script>
+</body>
+</html>
